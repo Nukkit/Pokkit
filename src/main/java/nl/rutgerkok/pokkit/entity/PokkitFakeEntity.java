@@ -7,15 +7,12 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import nl.rutgerkok.pokkit.Pokkit;
-import nl.rutgerkok.pokkit.PokkitLocation;
-import nl.rutgerkok.pokkit.world.PokkitWorld;
-
 import org.bukkit.Bukkit;
 import org.bukkit.EntityEffect;
 import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.World;
+import org.bukkit.block.PistonMoveReaction;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
@@ -26,7 +23,11 @@ import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
 
-import cn.nukkit.math.AxisAlignedBB;
+import nl.rutgerkok.pokkit.Pokkit;
+import nl.rutgerkok.pokkit.PokkitLocation;
+import nl.rutgerkok.pokkit.world.PokkitWorld;
+
+import cn.nukkit.math.SimpleAxisAlignedBB;
 
 abstract class PokkitFakeEntity implements Entity {
 
@@ -142,7 +143,7 @@ abstract class PokkitFakeEntity implements Entity {
 	@Override
 	public List<Entity> getNearbyEntities(double x, double y, double z) {
 		cn.nukkit.level.Location location = this.getNukkitLocation();
-		cn.nukkit.entity.Entity[] found = location.level.getNearbyEntities(new AxisAlignedBB(
+		cn.nukkit.entity.Entity[] found = location.level.getNearbyEntities(new SimpleAxisAlignedBB(
 				location.x - x, location.y - y, location.z - z,
 				location.x + x, location.y + y, location.z + z));
 
@@ -159,6 +160,11 @@ abstract class PokkitFakeEntity implements Entity {
 	@Override
 	public List<Entity> getPassengers() {
 		return Collections.emptyList();
+	}
+
+	@Override
+	public PistonMoveReaction getPistonMoveReaction() {
+		return PistonMoveReaction.MOVE;
 	}
 
 	@Override
@@ -277,6 +283,11 @@ abstract class PokkitFakeEntity implements Entity {
 
 	@Override
 	public boolean isPermissionSet(String name) {
+		return false;
+	}
+
+	@Override
+	public boolean isPersistent() {
 		return false;
 	}
 
@@ -414,6 +425,11 @@ abstract class PokkitFakeEntity implements Entity {
 	public boolean setPassenger(Entity passenger) {
 		throw Pokkit.unsupported();
 
+	}
+
+	@Override
+	public void setPersistent(boolean persistent) {
+		throw Pokkit.unsupported();
 	}
 
 	@Override

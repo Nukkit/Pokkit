@@ -7,18 +7,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import nl.rutgerkok.pokkit.Pokkit;
-import nl.rutgerkok.pokkit.PokkitLocation;
-import nl.rutgerkok.pokkit.metadata.PokkitMetadataValue;
-import nl.rutgerkok.pokkit.player.PokkitPlayer;
-import nl.rutgerkok.pokkit.player.PokkitTeleportCause;
-import nl.rutgerkok.pokkit.world.PokkitWorld;
+import com.google.common.base.Strings;
 
 import org.bukkit.Bukkit;
 import org.bukkit.EntityEffect;
 import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.World;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.PistonMoveReaction;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -31,7 +28,12 @@ import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
 
-import com.google.common.base.Strings;
+import nl.rutgerkok.pokkit.Pokkit;
+import nl.rutgerkok.pokkit.PokkitLocation;
+import nl.rutgerkok.pokkit.metadata.PokkitMetadataValue;
+import nl.rutgerkok.pokkit.player.PokkitPlayer;
+import nl.rutgerkok.pokkit.player.PokkitTeleportCause;
+import nl.rutgerkok.pokkit.world.PokkitWorld;
 
 import cn.nukkit.math.Vector3;
 import cn.nukkit.network.protocol.RemoveEntityPacket;
@@ -130,7 +132,6 @@ public class PokkitEntity implements Entity {
     @Override
     public EntityDamageEvent getLastDamageCause() {
         cn.nukkit.event.entity.EntityDamageEvent nukkitEvent = nukkit.getLastDamageCause();
-        @SuppressWarnings("deprecation")
         EntityDamageEvent bukkitEvent = new EntityDamageEvent(PokkitEntity.toBukkit(nukkitEvent.getEntity()),
                 PokkitDamageCause.toBukkit(nukkitEvent.getCause()), nukkitEvent.getDamage());
         return bukkitEvent;
@@ -178,6 +179,11 @@ public class PokkitEntity implements Entity {
     @Override
 	public List<Entity> getPassengers() {
 		throw Pokkit.unsupported();
+	}
+
+    @Override
+	public PistonMoveReaction getPistonMoveReaction() {
+		return PistonMoveReaction.MOVE;
 	}
 
     @Override
@@ -371,6 +377,11 @@ public class PokkitEntity implements Entity {
     }
 
     @Override
+	public boolean isPersistent() {
+		return false;
+	}
+
+    @Override
     public boolean isSilent() {
         return false; // No silence support yet
     }
@@ -499,22 +510,27 @@ public class PokkitEntity implements Entity {
     }
 
     @Override
-    public void setPortalCooldown(int cooldown) {
-        return; // TODO: When portals are properly implemented in Nukkit, change this to use Nukkit's API!
-    }
+	public void setPersistent(boolean persistent) {
+		throw Pokkit.unsupported();
+	}
 
     @Override
+    public void setPortalCooldown(int cooldown) {
+        return; // When portals are properly implemented in Nukkit, change this to use Nukkit's API!
+    }
+
+	@Override
     public void setSilent(boolean flag) {
         throw Pokkit.unsupported();
 
     }
 
-    @Override
+	@Override
     public void setTicksLived(int value) {
         nukkit.ticksLived = value;
     }
 
-    @Override
+	@Override
     public void setVelocity(Vector velocity) {
         nukkit.setMotion(new Vector3(velocity.getX(), velocity.getY(), velocity.getZ()));
     }
@@ -548,4 +564,9 @@ public class PokkitEntity implements Entity {
     public boolean teleport(Location location, TeleportCause cause) {
         return nukkit.teleport(PokkitLocation.toNukkit(location), PokkitTeleportCause.toNukkit(cause));
     }
+
+    @Override
+	public BlockFace getFacing() {
+		throw Pokkit.unsupported();
+	}
 }

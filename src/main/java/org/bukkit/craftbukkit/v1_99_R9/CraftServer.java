@@ -13,40 +13,30 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import nl.rutgerkok.pokkit.Pokkit;
-import nl.rutgerkok.pokkit.PokkitGameMode;
-import nl.rutgerkok.pokkit.PokkitHelpMap;
-import nl.rutgerkok.pokkit.PokkitPluginMessenger;
-import nl.rutgerkok.pokkit.PokkitUnsafe;
-import nl.rutgerkok.pokkit.UniqueIdConversion;
-import nl.rutgerkok.pokkit.command.PokkitCommandFetcher;
-import nl.rutgerkok.pokkit.command.PokkitCommandSender;
-import nl.rutgerkok.pokkit.enchantment.PokkitEnchantment;
-import nl.rutgerkok.pokkit.inventory.custom.PokkitCustomInventory;
-import nl.rutgerkok.pokkit.item.PokkitItemFactory;
-import nl.rutgerkok.pokkit.metadata.AllMetadataStore;
-import nl.rutgerkok.pokkit.player.OnlinePlayerData;
-import nl.rutgerkok.pokkit.player.PokkitOfflinePlayer;
-import nl.rutgerkok.pokkit.player.PokkitPlayer;
-import nl.rutgerkok.pokkit.plugin.PokkitPluginManager;
-import nl.rutgerkok.pokkit.scheduler.PokkitScheduler;
-import nl.rutgerkok.pokkit.scoreboard.PokkitScoreboardManager;
-import nl.rutgerkok.pokkit.world.PokkitWorld;
-import nl.rutgerkok.pokkit.world.PokkitWorldType;
+import com.google.common.collect.ImmutableMap;
 
 import org.bukkit.BanList;
 import org.bukkit.BanList.Type;
 import org.bukkit.GameMode;
+import org.bukkit.Keyed;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Server;
+import org.bukkit.StructureType;
+import org.bukkit.Tag;
 import org.bukkit.UnsafeValues;
 import org.bukkit.Warning.WarningState;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
+import org.bukkit.advancement.Advancement;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarFlag;
 import org.bukkit.boss.BarStyle;
@@ -68,6 +58,7 @@ import org.bukkit.inventory.ItemFactory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Merchant;
 import org.bukkit.inventory.Recipe;
+import org.bukkit.loot.LootTable;
 import org.bukkit.map.MapView;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
@@ -78,11 +69,31 @@ import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.util.CachedServerIcon;
 
-import com.avaje.ebean.config.ServerConfig;
-import com.google.common.collect.ImmutableMap;
+import net.md_5.bungee.api.chat.BaseComponent;
+
+import nl.rutgerkok.pokkit.Pokkit;
+import nl.rutgerkok.pokkit.PokkitGameMode;
+import nl.rutgerkok.pokkit.PokkitHelpMap;
+import nl.rutgerkok.pokkit.PokkitPluginMessenger;
+import nl.rutgerkok.pokkit.PokkitUnsafe;
+import nl.rutgerkok.pokkit.UniqueIdConversion;
+import nl.rutgerkok.pokkit.blockdata.PokkitBlockData;
+import nl.rutgerkok.pokkit.command.PokkitCommandFetcher;
+import nl.rutgerkok.pokkit.command.PokkitCommandSender;
+import nl.rutgerkok.pokkit.enchantment.PokkitEnchantment;
+import nl.rutgerkok.pokkit.inventory.custom.PokkitCustomInventory;
+import nl.rutgerkok.pokkit.item.PokkitItemFactory;
+import nl.rutgerkok.pokkit.metadata.AllMetadataStore;
+import nl.rutgerkok.pokkit.player.OnlinePlayerData;
+import nl.rutgerkok.pokkit.player.PokkitOfflinePlayer;
+import nl.rutgerkok.pokkit.player.PokkitPlayer;
+import nl.rutgerkok.pokkit.plugin.PokkitPluginManager;
+import nl.rutgerkok.pokkit.scheduler.PokkitScheduler;
+import nl.rutgerkok.pokkit.scoreboard.PokkitScoreboardManager;
+import nl.rutgerkok.pokkit.world.PokkitWorld;
+import nl.rutgerkok.pokkit.world.PokkitWorldType;
 
 import cn.nukkit.level.Level;
-import net.md_5.bungee.api.chat.BaseComponent;
 
 @SuppressWarnings("deprecation")
 public final class CraftServer extends Server.Spigot implements Server {
@@ -136,13 +147,14 @@ public final class CraftServer extends Server.Spigot implements Server {
 	}
 
 	@Override
-	public Player[] _INVALID_getOnlinePlayers() {
-		return nukkit.getOnlinePlayers().values().stream().map(PokkitPlayer::toBukkit).toArray(Player[]::new);
+	public boolean addRecipe(Recipe arg0) {
+		throw Pokkit.unsupported();
 	}
 
 	@Override
-	public boolean addRecipe(Recipe arg0) {
-		throw Pokkit.unsupported();
+	public Iterator<Advancement> advancementIterator() {
+		// Advancements not implemented
+		return Collections.emptyIterator();
 	}
 
 	@Override
@@ -181,9 +193,30 @@ public final class CraftServer extends Server.Spigot implements Server {
 	}
 
 	@Override
-	public void configureDbConfig(ServerConfig arg0) {
-		throw Pokkit.unsupported();
+	public BlockData createBlockData(Material material) {
+		return PokkitBlockData.createBlockData(material, 0);
+	}
 
+	@Override
+	public BlockData createBlockData(Material material, Consumer<BlockData> consumer) {
+		BlockData blockData = PokkitBlockData.createBlockData(material, 0);
+		consumer.accept(blockData);
+		return blockData;
+	}
+
+	@Override
+	public BlockData createBlockData(Material material, String data) throws IllegalArgumentException {
+		try {
+			int blockData = Integer.parseUnsignedInt(data);
+			return PokkitBlockData.createBlockData(material, blockData);
+		} catch(NumberFormatException e) {
+			throw new IllegalArgumentException("Data \""+data+"\"is not valid block data. " + Pokkit.NAME + " expects a number as the block data, as block states do not exist yet in MCPE.");
+		}
+	}
+
+	@Override
+	public BlockData createBlockData(String data) throws IllegalArgumentException {
+		return PokkitBlockData.createBlockData(data);
 	}
 
 	@Override
@@ -236,7 +269,7 @@ public final class CraftServer extends Server.Spigot implements Server {
 		if (alreadyLoaded != null) {
 			return alreadyLoaded;
 		}
-		
+
 		if (nukkit.isLevelGenerated(creator.name())) {
 			nukkit.loadLevel(creator.name());
 			World alreadyGenerated = this.getWorld(creator.name());
@@ -263,6 +296,12 @@ public final class CraftServer extends Server.Spigot implements Server {
 	@Override
 	public boolean dispatchCommand(CommandSender sender, String command) throws CommandException {
 		return nukkit.dispatchCommand(PokkitCommandSender.toNukkit(sender), command);
+	}
+
+	@Override
+	public Advancement getAdvancement(NamespacedKey key) {
+		// Advancements not implemented
+		return null;
 	}
 
 	@Override
@@ -382,6 +421,11 @@ public final class CraftServer extends Server.Spigot implements Server {
 	@Override
 	public Logger getLogger() {
 		return logger;
+	}
+
+	@Override
+	public LootTable getLootTable(NamespacedKey key) {
+		throw Pokkit.unsupported();
 	}
 
 	@Override
@@ -559,6 +603,11 @@ public final class CraftServer extends Server.Spigot implements Server {
 	}
 
 	@Override
+	public <T extends Keyed> Tag<T> getTag(String registry, NamespacedKey tag, Class<T> clazz) {
+		throw Pokkit.unsupported();
+	}
+
+	@Override
 	public int getTicksPerAnimalSpawns() {
 		throw Pokkit.unsupported();
 
@@ -695,6 +744,12 @@ public final class CraftServer extends Server.Spigot implements Server {
 	}
 
 	@Override
+	public void reloadData() {
+		// Are there more things we can reload, without reloading all plugins or worlds?
+		nukkit.reloadWhitelist();
+	}
+
+	@Override
 	public void reloadWhitelist() {
 		nukkit.reloadWhitelist();
 	}
@@ -784,4 +839,13 @@ public final class CraftServer extends Server.Spigot implements Server {
 		return nukkit.unloadLevel(level, true);
 	}
 
+	@Override
+	public ItemStack createExplorerMap(World w, Location l, StructureType t) {
+		return createExplorerMap(w, l, t);
+	}
+
+	@Override
+	public ItemStack createExplorerMap(World w, Location l, StructureType t, int i, boolean b) {
+		throw Pokkit.unsupported();
+	}
 }
